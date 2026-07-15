@@ -1,7 +1,7 @@
 """
 Generate the two experimental figures of the paper from the benchmark CSVs:
-  - hf_cactus.png          (Fig. 11)  from results_compare_hf_full_dataset.csv
-  - scaling_artificial.png (Fig. 12)  from scaling_artificial.csv
+  - hf_cactus.png          (Fig. 12)  from results_compare_hf_full_dataset.csv
+  - scaling_artificial.png (Fig. 13)  from scaling_artificial.csv
 
 Usage:  python make_figures.py [--outdir .]
 """
@@ -59,10 +59,11 @@ def scaling(outdir):
     ax.set_xlabel(r"size parameter $n$  (grid $(2n{+}2)\times(2n{+}2)$)")
     ax.set_ylabel("time (s)")
     ax.grid(True, which="both", alpha=0.3)
-    ax.legend(fontsize=7, loc="upper left")
+    ax.legend(fontsize=7, loc="lower left", bbox_to_anchor=(0, 1.02),
+              ncol=2, frameon=False, borderaxespad=0)
     fig.tight_layout()
     out = os.path.join(outdir, "scaling_artificial.png")
-    fig.savefig(out, dpi=200)
+    fig.savefig(out, dpi=200, bbox_inches="tight")
     print("saved", out)
 
 
