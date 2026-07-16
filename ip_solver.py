@@ -49,7 +49,7 @@ class IPSolver:
         of a *black* square by a b/w square and two white squares (see
         instance hf_1199 of the pencil-puzzle-bench dataset for a concrete
         counterexample to their Theorem 6).  corrected=False reproduces the
-        published model A--E faithfully."""
+        published model A-E faithfully."""
         self.puzzle = puzzle
         self.corrected = corrected
         self.model: Optional[Model] = None
@@ -62,9 +62,7 @@ class IPSolver:
         self.num_conss = 0
         self.num_nonzeros = 0  # counted while building
 
-    # ------------------------------------------------------------------ #
-    # helpers
-    # ------------------------------------------------------------------ #
+    # Helpers
 
     def _is_white_sq(self, i: int, j: int) -> bool:
         """A 'white square' in the IP sense = playable cell of the instance."""
@@ -79,9 +77,7 @@ class IPSolver:
         self.num_conss += 1
         self.num_nonzeros += nnz
 
-    # ------------------------------------------------------------------ #
-    # model construction
-    # ------------------------------------------------------------------ #
+    # Model construction
 
     def build(self):
         p = self.puzzle
@@ -321,12 +317,12 @@ class IPSolver:
     #
     # The white right angle of a triangle, together with two white squares,
     # can complete a 270-degree corner at the corner of a black square --
-    # a case not excluded by families A--E of the published model.  For each
+    # a case not excluded by families A-E of the published model. For each
     # triangle type t whose white right angle points to the 2x2 corner cell,
     # if the two orthogonal cells are white then the corner cell must be
     # white or the closing triangle type t':
     #   x[i,j,t] + x[r1,W] + x[r2,W] <= x[c,W] + x[c,t'] + 2
-    # (the IP analogue of the SAT "corned triangles propagation" clauses).
+    # This is the IP analogue of the SAT L-shape closure clauses.
     _F_RULES = [
         # t, white offsets, corner offset, closing type t'
         (1, ((0, +1), (+1, 0)), (+1, +1), 3),
@@ -361,9 +357,7 @@ class IPSolver:
                         else lhs + quicksum(wvars) <= 2,
                         nnz=1 + len(wvars) + len(rhs))
 
-    # ------------------------------------------------------------------ #
-    # solving
-    # ------------------------------------------------------------------ #
+    # Solving
 
     def solve(self, time_limit: Optional[float] = None) -> Optional[bool]:
         """Build (if needed) and solve. Returns True/False, or None on timeout."""
@@ -400,9 +394,7 @@ class IPSolver:
                     sol[(i, j)] = Motif.BLACK
         self._solution = sol
 
-    # ------------------------------------------------------------------ #
-    # accessors
-    # ------------------------------------------------------------------ #
+    # Accessors
 
     @property
     def solution(self) -> Optional[dict[tuple[int, int], Motif]]:

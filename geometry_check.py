@@ -118,7 +118,7 @@ def check_solution(puzzle: ShakashakaPuzzle,
     for node in nodes:
         regions[find(node)].append(node)
 
-    for root, members in regions.items():
+    for members in regions.values():
         area = len(members) * 0.25
         xs, ys, us, vs = [], [], [], []
         for (i, j, p) in members:

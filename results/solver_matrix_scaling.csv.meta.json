@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "created_utc": "2026-07-16T12:47:56.099872+00:00",
+  "csv_sha256": "b72bcf66ea08fa7e2efccac94caf114ed3c433c381868f7447ea2eed391048c1",
+  "composition": {
+    "method": "concatenation after protocol, instance, count, and verdict validation",
+    "campaigns": [
+      {
+        "created_utc": "2026-07-15T16:29:44.663284+00:00",
+        "backends": [
+          "our-cadical",
+          "our-cpsat",
+          "our-scip",
+          "demaine-scip",
+          "demaine-cpsat"
+        ],
+        "csv_sha256": "07fae100930d5537248d54e131910322c543c027a8fa82aba4d46a1cffd1ad50",
+        "metadata_sha256": "7995fe58ab0310d25199b0e39c45307c0edc3565077968da1dd2d415d134a9f6",
+        "source_code_sha256": null
+      },
+      {
+        "created_utc": "2026-07-16T12:47:01.349028+00:00",
+        "backends": [
+          "demaine-cadical"
+        ],
+        "csv_sha256": "2a01242d206bd652740291f05c5d3a66ba9ea04537cf060bd60d155102d06422",
+        "metadata_sha256": "4164f302fb93c92f431f06aa88a274e44fb7a5b70d5003c1d7b1f7271ba7a4ae",
+        "source_code_sha256": "8cc0c50ae2bd1b0b261075e4fafac6de8acaeb40c7655d6523f0b12233adf983"
+      }
+    ]
+  },
+  "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+  "python_executable": "python.exe",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+  "packages": {
+    "ortools": "9.15.6755",
+    "pyscipopt": "6.2.1",
+    "python-sat": "1.9.dev5",
+    "datasets": "4.4.2",
+    "matplotlib": "3.10.8"
+  },
+  "protocol": {
+    "mode": "artificial",
+    "source": "artificial_instance",
+    "source_sha256": null,
+    "full": false,
+    "limit": null,
+    "start": 1,
+    "end": null,
+    "sizes": "5,10,15,20,25,30,40,50",
+    "backends": [
+      "our-cadical",
+      "our-cpsat",
+      "our-scip",
+      "demaine-cadical",
+      "demaine-cpsat",
+      "demaine-scip"
+    ],
+    "repeat": 3,
+    "timeout_seconds": 600.0,
+    "threads": 1,
+    "random_seed": 1,
+    "warmup": true
+  }
+}

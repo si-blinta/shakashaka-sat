@@ -96,9 +96,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate Shakashaka puzzles")
     parser.add_argument("rows", type=int, help="Inner rows")
-    parser.add_argument("cols", type=int, nargs="?", default=None, help="Inner cols (default=rows)")
-    parser.add_argument("--black", type=int, default=2, help="Number of unindexed black cells")
-    parser.add_argument("--indexed", type=int, default=1, help="Number of indexed black cells")
+    parser.add_argument(
+        "cols", type=int, nargs="?", default=None, help="Inner cols (default=rows)"
+    )
+    parser.add_argument(
+        "--black", type=int, default=2, help="Number of unindexed black cells"
+    )
+    parser.add_argument(
+        "--indexed", type=int, default=1, help="Number of indexed black cells"
+    )
     parser.add_argument("--seed", type=int, default=None, help="Random seed")
     parser.add_argument("--output", "-o", required=True, help="Output file path")
     args = parser.parse_args()

@@ -18,7 +18,6 @@ Implements all constraints from the formalization:
 from __future__ import annotations
 
 from itertools import combinations
-from typing import Optional
 
 from puzzle import ShakashakaPuzzle, Motif
 

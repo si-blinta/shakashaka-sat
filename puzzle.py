@@ -15,7 +15,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import IntEnum
 from pathlib import Path
-from typing import Optional
 
 
 class Motif(IntEnum):
@@ -27,16 +26,9 @@ class Motif(IntEnum):
     WHITE = 5     # Empty white cell
     BLACK = 6     # Black cell
 
-    def is_triangle(self) -> bool:
-        return self.value in (1, 2, 3, 4)
-
     def symbol(self) -> str:
         symbols = {1: "◣", 2: "◤", 3: "◥", 4: "◢", 5: "·", 6: "■"}
         return symbols[self.value]
-
-
-PLAYABLE_MOTIFS = {Motif.TRI_UL, Motif.TRI_BL, Motif.TRI_BR, Motif.TRI_UR, Motif.WHITE}
-ALL_MOTIFS = set(Motif)
 
 
 @dataclass
@@ -72,18 +64,6 @@ class ShakashakaPuzzle:
         """Number of playable columns."""
         return self.ncols - 2
 
-    # Backward-compat helpers
-    @property
-    def n(self) -> int:
-        """Alias – only valid when grid is square."""
-        assert self.nrows == self.ncols, "n is ambiguous for non-square grids"
-        return self.nrows
-
-    @property
-    def inner_size(self) -> int:
-        assert self.inner_rows == self.inner_cols, "inner_size is ambiguous for non-square grids"
-        return self.inner_rows
-
     def is_border(self, i: int, j: int) -> bool:
         return i == 1 or i == self.nrows or j == 1 or j == self.ncols
 
@@ -91,7 +71,11 @@ class ShakashakaPuzzle:
         return self.is_border(i, j) or (i, j) in self.black_cells
 
     def is_playable(self, i: int, j: int) -> bool:
-        return not self.is_black(i, j) and 2 <= i <= self.nrows - 1 and 2 <= j <= self.ncols - 1
+        return (
+            not self.is_black(i, j)
+            and 2 <= i <= self.nrows - 1
+            and 2 <= j <= self.ncols - 1
+        )
 
     def neighbors(self, i: int, j: int) -> list[tuple[int, int]]:
         """Orthogonal neighbors within grid bounds (N(i,j) from formalization)."""
@@ -135,14 +119,22 @@ class ShakashakaPuzzle:
                     continue
                 elif ch == '#':
                     black_cells.add((row_idx, col_idx))
-                elif ch in '01234':
+                elif ch in "01234":
                     pos = (row_idx, col_idx)
                     black_cells.add(pos)
                     indexed_cells[pos] = int(ch)
                 else:
-                    raise ValueError(f"Unknown character '{ch}' at row {row_idx}, col {col_idx}")
+                    raise ValueError(
+                        f"unknown character {ch!r} at row {row_idx}, "
+                        f"column {col_idx}"
+                    )
 
-        return ShakashakaPuzzle(nrows=nrows, ncols=ncols, black_cells=black_cells, indexed_cells=indexed_cells)
+        return ShakashakaPuzzle(
+            nrows=nrows,
+            ncols=ncols,
+            black_cells=black_cells,
+            indexed_cells=indexed_cells,
+        )
 
     def display_puzzle(self) -> str:
         """Display the puzzle grid."""

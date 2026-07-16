@@ -1,96 +1,102 @@
-# Shakashaka as a SAT Problem - Artifact
+# Shakashaka SAT artifact
 
-SAT-based solver for the Shakashaka pencil puzzle, with a complete comparison
-against the 0-1 integer-programming (IP) model of Demaine, Okamoto, Uehara,
-and Uno (IEICE Transactions on Fundamentals, 2014). This is the companion
-artifact of an anonymous ICTAI 2026 submission.
+This repository contains the SAT encoding, the corrected A-F model, and the
+experiments reported in the paper. The benchmark compares both models with
+CaDiCaL 1.9.5, CP-SAT, and SCIP.
 
 ## Contents
 
-```text
-puzzle.py               instance representation
-encoder.py              CNF encoding described in the paper
-solver.py               SAT solving with Glucose 4 via PySAT
-ip_solver.py            published IP model A-E and corrected model A-F
-                        with SCIP via PySCIPOpt
-geometry_check.py       independent geometric solution validator
-artificial.py           crafted 2n x 2n scaling family
-generator.py            random satisfiable-instance generator
+| Path | Purpose |
+| --- | --- |
+| `puzzle.py` | Puzzle representation and input parser |
+| `encoder.py` | Local CNF encoding |
+| `demaine_cnf.py` | Direct, auxiliary-free CNF translation of A-F |
+| `ip_solver.py` | A-E IP model and corrective family F |
+| `solver_backends.py` | CaDiCaL, CP-SAT, and SCIP adapters |
+| `geometry_check.py` | Independent solution validator |
+| `puzzlink.py` | Decoder for Shakashaka puzz.link URLs |
+| `artificial.py` | Crafted scaling family |
+| `benchmark_solver_matrix.py` | Resumable six-configuration benchmark |
+| `analyze_solver_matrix.py` | Result validation, summaries, and figures |
+| `test_*.py` | Cross-model and backend tests |
+| `demo_ip_bug/` | Reproduction of the A-E counterexample |
+| `data/` | Immutable cache of the 2,897 benchmark instances |
+| `results/` | Raw measurements, metadata, and summaries |
+| `figures/` | Figures generated from the recorded measurements |
 
-test_ip_equiv.py        SAT/IP cross-validation suite
-demo_ip_bug/verify_ip_bug.py
-                        reproducible counterexample to the published IP model
-verify_hf.py            validation against pencil-puzzle-bench
-
-benchmark_compare.py    SAT vs IP benchmark on 2,897 public instances
-scaling_bench.py        SAT vs IP benchmark on the crafted family
-make_figures.py         regenerates Figures 12 and 13
-
-results_compare_hf_full_dataset.csv   2,897-instance benchmark results
-scaling_artificial.csv                crafted-family benchmark results
-```
+`generator.py` and `solver.py` support the tests, while `puzzlink.py` decodes
+dataset URLs. `solver.py` is the small reference PySAT solver; the paper
+benchmarks use the adapters in `solver_backends.py`.
 
 ## Installation
 
+The recorded campaign used Python 3.13.14. Install the pinned dependencies with:
+
 ```text
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ## Validation
 
-```text
-python test_ip_equiv.py
-python demo_ip_bug/verify_ip_bug.py
-```
-
-The first command cross-validates the SAT and corrected IP formulations. The
-second reproduces the instance on which the published A-E model accepts an
-invalid solution, rejects it with the independent geometric validator, and
-checks that the corrected A-F model returns a valid solution.
-
-## Reproducing the experiments
-
-Public benchmark:
+Run the complete local checks without creating bytecode files:
 
 ```text
-python benchmark_compare.py hf --full --repeat 3
+python -B test_demaine_cnf.py
+python -B test_ip_equiv.py
+python -B test_solver_backends.py
+python -B demo_ip_bug/verify_ip_bug.py
 ```
 
-Crafted scaling family:
+The first three commands validate the cardinality translation, agreement
+between the two models, SAT/UNSAT verdicts, decoded solutions, and backend
+timeouts. The demonstration shows that A-E accepts an invalid assignment on
+`hf_1199` and that family F removes it.
+
+## Recorded results
+
+The committed matrices contain one row per instance and configuration:
+
+- `results/solver_matrix_hf.csv`: 2,897 instances and six configurations;
+- `results/solver_matrix_scaling.csv`: eight crafted sizes and six
+  configurations.
+
+Each adjacent `.meta.json` file records the software versions, protocol,
+dataset hash, and composition provenance. The Demaine/CaDiCaL rows were
+measured in a separate campaign under the same machine and protocol; the
+campaigns were not interleaved.
+
+Validate the matrices and regenerate both figures:
 
 ```text
-python scaling_bench.py --sizes 5,10,15,20,25,30,40,50,60 --ip-max 60 --timeout 600 --repeat 3
-python scaling_bench.py --sizes 80,100 --ip-max 0 --repeat 1
+mkdir reproduced
+python -B analyze_solver_matrix.py results/solver_matrix_hf.csv --expected-instances 2897 --expected-repeat 3 --summary-csv reproduced/hf_summary.csv --figure reproduced/hf_cactus.png --metric total_ms --plot cactus
+python -B analyze_solver_matrix.py results/solver_matrix_scaling.csv --expected-instances 8 --expected-repeat 3 --summary-csv reproduced/scaling_summary.csv --figure reproduced/scaling.png --metric total_ms --plot scaling
 ```
 
-Regenerate the figures from the committed CSV files:
+The plots use the paired total time
+`median(build_i + solve_i)`. Every returned solution is checked by the
+geometric validator and against the reference CNF.
+
+## Re-running the benchmark
+
+The full protocol uses one thread, seed 1, one warm-up, three repetitions, and
+a 600-second solver limit:
 
 ```text
-python make_figures.py
+mkdir reproduced
+python -B benchmark_solver_matrix.py hf --full --instances-jsonl data/hf_instances.jsonl --repeat 3 --timeout 600 --threads 1 --random-seed 1 --csv reproduced/solver_matrix_hf.csv
+python -B benchmark_solver_matrix.py artificial --sizes 5,10,15,20,25,30,40,50 --repeat 3 --timeout 600 --threads 1 --random-seed 1 --csv reproduced/solver_matrix_scaling.csv
 ```
 
-## Solving an instance programmatically
+Add `--resume` to continue an interrupted run. The HF cache has SHA-256
+`0aecc8afb076adf025c36e89178827334320a0f6e55e7cf6f04370ca58da4e41`.
 
-```python
-from puzzle import ShakashakaPuzzle
-from solver import ShakashakaSolver
-from geometry_check import check_solution
+## Instance format
 
-puzzle = ShakashakaPuzzle.from_file("instance.txt")
-solver = ShakashakaSolver(puzzle)
-if solver.solve():
-    assert not check_solution(puzzle, solver.solution)
-    print(solver.display_solution())
-```
+An instance starts with `rows [cols]`, followed by one line per row. Use `.`
+for a white cell, `#` for an unnumbered black cell, or a digit from 0 to 4 for
+a clue.
 
-The instance format starts with `rows [cols]`, followed by one row per grid
-line using `.` for white cells, `#` for unnumbered black cells, and `0`-`4`
-for clue cells.
+## License
 
-## CSV columns
-
-`sat_vars`, `sat_clauses`, `sat_encode_ms`, `sat_solve_ms`, and `sat_result`
-describe the SAT side. `ip_vars`, `ip_conss`, `ip_nonzeros`, `ip_build_ms`,
-`ip_solve_ms`, and `ip_result` describe the IP side. `agree` records matching
-verdicts, while `*_valid` records validation by the independent geometric
-checker. Reported times are medians over the repetitions.
+See `LICENSE`.

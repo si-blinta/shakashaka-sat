@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "created_utc": "2026-07-16T12:47:55.894791+00:00",
+  "csv_sha256": "63bd278c50cee14518b0df8e1142b17cef1fe886d19195e9d672542879779017",
+  "composition": {
+    "method": "concatenation after protocol, instance, count, and verdict validation",
+    "campaigns": [
+      {
+        "created_utc": "2026-07-15T16:28:21.703436+00:00",
+        "backends": [
+          "our-cadical",
+          "our-cpsat",
+          "our-scip",
+          "demaine-scip",
+          "demaine-cpsat"
+        ],
+        "csv_sha256": "d075fbb5f7255d532503f8a6ba7ae8a5e058de59fcd371bb9d0780a70d1fcaeb",
+        "metadata_sha256": "2d1043652acf0bf85b1918d028496a45a67327cf19c7e0c3a071e62739cec4a3",
+        "source_code_sha256": null
+      },
+      {
+        "created_utc": "2026-07-16T12:41:20.329596+00:00",
+        "backends": [
+          "demaine-cadical"
+        ],
+        "csv_sha256": "bc67bacebf223b3e2a8f934ad3a83a7ccbee1a79771f9786e814879389325c3f",
+        "metadata_sha256": "6a57af5122c1bc200cd743741fb9b0023ad56dc501af443df109b31cab92d6ee",
+        "source_code_sha256": "8cc0c50ae2bd1b0b261075e4fafac6de8acaeb40c7655d6523f0b12233adf983"
+      }
+    ]
+  },
+  "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+  "python_executable": "python.exe",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+  "packages": {
+    "ortools": "9.15.6755",
+    "pyscipopt": "6.2.1",
+    "python-sat": "1.9.dev5",
+    "datasets": "4.4.2",
+    "matplotlib": "3.10.8"
+  },
+  "protocol": {
+    "mode": "hf",
+    "source": "local-cache:hf_instances.jsonl",
+    "source_sha256": "0aecc8afb076adf025c36e89178827334320a0f6e55e7cf6f04370ca58da4e41",
+    "full": true,
+    "limit": null,
+    "start": 1,
+    "end": null,
+    "sizes": null,
+    "backends": [
+      "our-cadical",
+      "our-cpsat",
+      "our-scip",
+      "demaine-cadical",
+      "demaine-cpsat",
+      "demaine-scip"
+    ],
+    "repeat": 3,
+    "timeout_seconds": 600.0,
+    "threads": 1,
+    "random_seed": 1,
+    "warmup": true
+  }
+}

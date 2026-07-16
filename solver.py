@@ -34,7 +34,10 @@ class ShakashakaSolver:
         clauses = self.encoder.clauses
 
         if verbose:
-            print(f"Encoded: {self.encoder.num_vars} variables, {self.encoder.num_clauses} clauses")
+            print(
+                f"Encoded: {self.encoder.num_vars} variables, "
+                f"{self.encoder.num_clauses} clauses"
+            )
 
         start = time.perf_counter()
         with Glucose4() as solver:

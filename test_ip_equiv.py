@@ -2,10 +2,8 @@
 Cross-validation of the IP solver (Demaine et al. model) against the SAT
 solver:
   1. same SAT/UNSAT verdict on every instance;
-  2. every IP solution satisfies the CNF formula Phi(I) (which is proven
-     sound and complete in the paper), hence is a valid Shakashaka solution;
-  3. every SAT solution satisfies the IP constraint logic (sanity check via
-     re-fixing the IP variables -- skipped; clause check is the strong one).
+  2. every IP solution satisfies the CNF formula Phi(I), hence is a valid
+     Shakashaka solution.
 """
 
 from __future__ import annotations
@@ -101,7 +99,7 @@ def main() -> int:
             all_ok &= run_one(f"random10 seed={100+seed}", p)
 
     # regression test: counterexample to the published IP model (hf_1199)
-    from verify_hf import decode_puzz_link
+    from puzzlink import decode_puzz_link
     p1199 = decode_puzz_link(
         "http://puzz.link/p?shakashaka/10/10/zs000ajaajaaj000azq")
     all_ok &= run_one("hf_1199 (IP-model counterexample)", p1199)
