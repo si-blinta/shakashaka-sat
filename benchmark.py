@@ -1,11 +1,7 @@
-"""Run the six model/backend configurations used in the paper.
+"""Benchmark the two models evaluated in the paper.
 
-    our CNF      + CaDiCaL 1.9.5
-    our CNF      + CP-SAT
-    our CNF      + SCIP
-    Demaine A-F + CaDiCaL 1.9.5 (exact auxiliary-free CNF translation)
-    Demaine A-F + SCIP
-    Demaine A-F + CP-SAT
+    CNF model             + CaDiCaL 1.9.5
+    corrected IP model A-F + SCIP
 
 Results use a long CSV format (one row per instance/configuration), which
 makes interrupted runs resumable and retains every timing sample.
@@ -27,38 +23,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from pyscipopt import Model
+
 from artificial import artificial_instance
 from geometry_check import check_solution
+from instances import load_instances
 from ip_solver import IPSolver
 from puzzle import ShakashakaPuzzle
-from solver_backends import (
-    CNFCadicalSolver,
-    CNFCPSATSolver,
-    CNFSCIPSolver,
-    DemaineCadicalSolver,
-    DemaineCPSATSolver,
-    configure_scip,
-)
-from test_ip_equiv import check_assignment_against_cnf
-from puzzlink import decode_puzz_link
+from solver_backends import CNFCadicalSolver, configure_scip
+from validation import check_assignment_against_cnf
 
 
 BACKENDS = (
     "our-cadical",
-    "our-cpsat",
-    "our-scip",
-    "demaine-cadical",
     "demaine-scip",
-    "demaine-cpsat",
 )
 
 BACKEND_INFO = {
-    "our-cadical": ("ours-cnf", "cadical195"),
-    "our-cpsat": ("ours-cnf", "cp-sat"),
-    "our-scip": ("ours-cnf", "scip"),
-    "demaine-cadical": ("demaine-a-f", "cadical195"),
-    "demaine-scip": ("demaine-a-f", "scip"),
-    "demaine-cpsat": ("demaine-a-f", "cp-sat"),
+    "our-cadical": ("cnf", "cadical195"),
+    "demaine-scip": ("ip-a-f", "scip"),
 }
 
 HEADER = [
@@ -68,7 +51,7 @@ HEADER = [
     "rows",
     "cols",
     "playable",
-    "formulation",
+    "model",
     "backend",
     "config",
     "vars",
@@ -90,17 +73,15 @@ HEADER = [
 ]
 
 CRITICAL_SOURCE_FILES = (
-    "benchmark_solver_matrix.py",
+    Path(__file__).name,
     "solver_backends.py",
-    "demaine_cnf.py",
-    "solver.py",
     "ip_solver.py",
     "encoder.py",
     "puzzle.py",
     "artificial.py",
     "geometry_check.py",
-    "test_ip_equiv.py",
-    "puzzlink.py",
+    "instances.py",
+    "validation.py",
 )
 
 VERDICT = {True: "SAT", False: "UNSAT", None: "TIMEOUT"}
@@ -115,6 +96,15 @@ def _package_version(distribution: str) -> str:
         return importlib.metadata.version(distribution)
     except importlib.metadata.PackageNotFoundError:
         return "not-installed"
+
+
+def _scip_version() -> str:
+    model = Model()
+    return (
+        f"{model.getMajorVersion()}."
+        f"{model.getMinorVersion()}."
+        f"{model.getTechVersion()}"
+    )
 
 
 def _source_code_fingerprint() -> dict:
@@ -152,10 +142,10 @@ def _metadata(
         "platform": platform.platform(),
         "processor": platform.processor(),
         "packages": {
-            "ortools": _package_version("ortools"),
-            "pyscipopt": _package_version("pyscipopt"),
+            "cadical": "1.9.5",
             "python-sat": _package_version("python-sat"),
-            "datasets": _package_version("datasets"),
+            "scip": _scip_version(),
+            "pyscipopt": _package_version("pyscipopt"),
             "matplotlib": _package_version("matplotlib"),
         },
         "source_code": _source_code_fingerprint(),
@@ -187,12 +177,7 @@ def _sha256(path: Path) -> str:
 
 
 def _critical_protocol(meta: dict) -> dict:
-    protocol = dict(meta.get("protocol", {}))
-    # start/end select rows, but do not change the protocol used for each row.
-    # Warm-up is intentionally retained because it can affect measured times.
-    protocol.pop("start", None)
-    protocol.pop("end", None)
-    return protocol
+    return dict(meta.get("protocol", {}))
 
 
 def _check_resume_metadata(old_meta: dict, new_meta: dict) -> None:
@@ -203,7 +188,13 @@ def _check_resume_metadata(old_meta: dict, new_meta: dict) -> None:
             f"new={_critical_protocol(new_meta)}"
         )
 
-    for key in ("python", "packages"):
+    for key in (
+        "python",
+        "python_executable",
+        "platform",
+        "processor",
+        "packages",
+    ):
         if old_meta.get(key) != new_meta.get(key):
             raise ValueError(
                 f"resume environment differs for {key}: "
@@ -238,6 +229,9 @@ def _prepare_outputs(
         if not meta_path.exists():
             raise FileNotFoundError(f"missing metadata file: {meta_path}")
         old_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        expected_hash = old_meta.get("csv_sha256")
+        if expected_hash and _sha256(csv_path) != str(expected_hash).lower():
+            raise ValueError("existing CSV hash does not match its metadata")
         _check_resume_metadata(old_meta, meta)
         with csv_path.open(newline="", encoding="utf-8") as handle:
             reader = csv.DictReader(handle)
@@ -250,11 +244,21 @@ def _prepare_outputs(
                     raise ValueError(f"duplicate existing result: {key}")
                 completed.add(key)
                 existing_rows[key] = row
+        if expected_hash:
+            old_meta.pop("csv_sha256")
+            meta_path.write_text(
+                json.dumps(old_meta, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
     else:
         output_header = list(HEADER)
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         with csv_path.open("w", newline="", encoding="utf-8") as handle:
-            csv.DictWriter(handle, fieldnames=output_header).writeheader()
+            csv.DictWriter(
+                handle,
+                fieldnames=output_header,
+                lineterminator="\n",
+            ).writeheader()
         meta_path.write_text(
             json.dumps(meta, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
@@ -271,74 +275,6 @@ def _playable(puzzle: ShakashakaPuzzle) -> int:
     )
 
 
-def _puzzle_from_record(record: dict) -> ShakashakaPuzzle:
-    required = {"nrows", "ncols", "black", "indexed"}
-    missing = required - set(record)
-    if missing:
-        raise ValueError(f"cache record misses fields: {sorted(missing)}")
-    black = {tuple(map(int, cell)) for cell in record["black"]}
-    indexed = {
-        tuple(map(int, key.split(","))): int(value)
-        for key, value in record["indexed"].items()
-    }
-    return ShakashakaPuzzle(
-        nrows=int(record["nrows"]),
-        ncols=int(record["ncols"]),
-        black_cells=black,
-        indexed_cells=indexed,
-    )
-
-
-def _load_cached_instances(path: Path) -> list[tuple[str, ShakashakaPuzzle]]:
-    instances = []
-    with path.open(encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, 1):
-            if not line.strip():
-                continue
-            try:
-                record = json.loads(line)
-                puzzle = _puzzle_from_record(record)
-            except Exception as exc:
-                raise ValueError(f"invalid cache record at line {line_number}") from exc
-            instances.append((f"hf_{len(instances) + 1}", puzzle))
-    if not instances:
-        raise ValueError(f"no instances in {path}")
-    return instances
-
-
-def _load_hf_instances(*, full: bool) -> list[tuple[str, ShakashakaPuzzle]]:
-    from datasets import load_dataset
-
-    data_file = "full_dataset.jsonl" if full else "golden_300.jsonl"
-    dataset = load_dataset(
-        "bluecoconut/pencil-puzzle-bench",
-        data_files=data_file,
-        split="train",
-    )
-    instances = []
-    errors = []
-    for row_number, record in enumerate(dataset, 1):
-        if record.get("pid") != "shakashaka":
-            continue
-        try:
-            puzzle = decode_puzz_link(record["puzzlink_url"])
-        except Exception as exc:
-            errors.append((row_number, str(exc)))
-            continue
-        instances.append((f"hf_{len(instances) + 1}", puzzle))
-    if errors:
-        preview = "; ".join(f"row {n}: {msg}" for n, msg in errors[:5])
-        raise RuntimeError(
-            f"failed to decode {len(errors)} Shakashaka instances: {preview}"
-        )
-    expected = 2897 if full else 15
-    if len(instances) != expected:
-        raise RuntimeError(
-            f"expected {expected} Shakashaka instances, found {len(instances)}"
-        )
-    return instances
-
-
 def _make_solver(
     config: str,
     puzzle: ShakashakaPuzzle,
@@ -350,41 +286,12 @@ def _make_solver(
         solver = CNFCadicalSolver(puzzle, random_seed=random_seed)
         solver.build()
         return solver
-    if config == "our-cpsat":
-        solver = CNFCPSATSolver(
-            puzzle, num_workers=threads, random_seed=random_seed
-        )
-        solver.build()
-        return solver
-    if config == "our-scip":
-        solver = CNFSCIPSolver(
-            puzzle, num_threads=threads, random_seed=random_seed
-        )
-        solver.build()
-        return solver
-    if config == "demaine-cadical":
-        solver = DemaineCadicalSolver(
-            puzzle,
-            corrected=True,
-            random_seed=random_seed,
-        )
-        solver.build()
-        return solver
     if config == "demaine-scip":
         solver = IPSolver(puzzle, corrected=True)
         solver.build()
         configure_scip(
             solver.model, num_threads=threads, random_seed=random_seed
         )
-        return solver
-    if config == "demaine-cpsat":
-        solver = DemaineCPSATSolver(
-            puzzle,
-            corrected=True,
-            num_workers=threads,
-            random_seed=random_seed,
-        )
-        solver.build()
         return solver
     raise ValueError(f"unknown configuration: {config}")
 
@@ -409,10 +316,8 @@ def _status_name(config: str, solver, verdict: Optional[bool]) -> str:
 
 def _is_timeout_status(config: str, status: str) -> bool:
     normalized = status.upper()
-    if config in {"our-cadical", "demaine-cadical"}:
+    if config == "our-cadical":
         return normalized == "TIMEOUT"
-    if config in {"our-cpsat", "demaine-cpsat"}:
-        return normalized == "UNKNOWN"
     return normalized == "TIMELIMIT"
 
 
@@ -498,7 +403,7 @@ def _run_backend(
         for build_value, solve_value in zip(build_samples, solve_samples)
     ]
     total_median = statistics.median(total_samples)
-    formulation, backend = BACKEND_INFO[config]
+    model, backend = BACKEND_INFO[config]
     return {
         "family": family,
         "instance_index": instance_index,
@@ -506,7 +411,7 @@ def _run_backend(
         "rows": puzzle.nrows,
         "cols": puzzle.ncols,
         "playable": _playable(puzzle),
-        "formulation": formulation,
+        "model": model,
         "backend": backend,
         "config": config,
         "vars": counts[0],
@@ -534,9 +439,20 @@ def _append_row(path: Path, row: dict, fieldnames: list[str]) -> None:
             handle,
             fieldnames=fieldnames,
             extrasaction="ignore",
+            lineterminator="\n",
         )
         writer.writerow(row)
         handle.flush()
+
+
+def _finalize_metadata(csv_path: Path) -> None:
+    meta_path = csv_path.with_suffix(csv_path.suffix + ".meta.json")
+    metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+    metadata["csv_sha256"] = _sha256(csv_path)
+    meta_path.write_text(
+        json.dumps(metadata, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _check_instance_verdicts(
@@ -614,8 +530,11 @@ def main() -> int:
         default=True,
     )
     parser.add_argument("--full", action="store_true")
-    parser.add_argument("--instances-jsonl")
-    parser.add_argument("--sizes", default="5,10,15,20,25,30,40,50,60,80,100")
+    parser.add_argument(
+        "--instances-jsonl",
+        default=str(Path(__file__).resolve().parent / "data" / "hf_instances.jsonl"),
+    )
+    parser.add_argument("--sizes", default="5,10,15,20,25,30,40,50")
     args = parser.parse_args()
 
     if args.repeat < 1:
@@ -639,23 +558,14 @@ def main() -> int:
         parser.error("duplicate backend in --backends")
 
     if args.mode == "hf":
-        if args.instances_jsonl:
-            cache_path = Path(args.instances_jsonl).resolve()
-            raw_instances = _load_cached_instances(cache_path)
-            source = f"local-cache:{cache_path.name}"
-            source_sha256 = _sha256(cache_path)
-            if args.full and len(raw_instances) != 2897:
-                raise RuntimeError(
-                    f"--full expects 2897 cached instances, found {len(raw_instances)}"
-                )
-        else:
-            raw_instances = _load_hf_instances(full=args.full)
-            source = (
-                "bluecoconut/pencil-puzzle-bench/full_dataset.jsonl"
-                if args.full
-                else "bluecoconut/pencil-puzzle-bench/golden_300.jsonl"
+        cache_path = Path(args.instances_jsonl).resolve()
+        raw_instances = load_instances(cache_path)
+        source = f"local-cache:{cache_path.name}"
+        source_sha256 = _sha256(cache_path)
+        if args.full and len(raw_instances) != 2897:
+            raise RuntimeError(
+                f"--full expects 2897 cached instances, found {len(raw_instances)}"
             )
-            source_sha256 = None
         instances = _slice_instances(
             raw_instances,
             start=args.start,
@@ -708,6 +618,7 @@ def main() -> int:
                 continue
             if args.budget is not None and written > 0:
                 if time.perf_counter() - started >= args.budget:
+                    _finalize_metadata(csv_path)
                     print(
                         f"budget reached; resume with the same command and --resume",
                         flush=True,
@@ -739,6 +650,7 @@ def main() -> int:
 
         _check_instance_verdicts(family, name, selected_backends, rows)
 
+    _finalize_metadata(csv_path)
     print(
         f"complete: {len(instances)} instances, {written} new rows -> {csv_path}",
         flush=True,

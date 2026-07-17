@@ -1,0 +1,3 @@
+config,instances,solved,timeouts,build_mean_ms,build_median_ms,solve_mean_ms,solve_median_ms,solve_p95_ms,solve_max_ms,total_mean_ms,total_median_ms,total_p95_ms,total_max_ms,par2_solve_s,par2_total_s
+our-cadical,8,8,0,467.467238,283.215900,12.398162,7.364650,35.426610,41.249700,479.845012,290.580550,1387.881180,1586.446400,0.012398,0.479845
+demaine-scip,8,8,0,5122.591513,1608.281850,4190.738188,867.723650,16874.272065,22221.638600,9456.236563,2467.796300,36573.714770,47439.407300,4.190738,9.456237

@@ -1,0 +1,45 @@
+{
+  "schema_version": 2,
+  "created_utc": "2026-07-17T09:42:26Z",
+  "csv_sha256": "0fd5956f0c90f6ec41ae6fa7a9f8eac2728e77ad6bca3e6000279197010946d7",
+  "derivation": {
+    "operation": "exact row selection with schema normalization",
+    "source_csv_sha256": "63bd278c50cee14518b0df8e1142b17cef1fe886d19195e9d672542879779017",
+    "source_created_utc": "2026-07-16T12:47:55.894791+00:00",
+    "selected_configs": [
+      "our-cadical",
+      "demaine-scip"
+    ],
+    "schema_change": "column name and model identifiers normalized"
+  },
+  "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+  "python_executable": "python.exe",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+  "packages_used": {
+    "cadical": "1.9.5",
+    "python-sat": "1.9.dev5",
+    "scip": "10.0.2",
+    "pyscipopt": "6.2.1",
+    "matplotlib": "3.10.8"
+  },
+  "protocol": {
+    "mode": "hf",
+    "source": "local-cache:hf_instances.jsonl",
+    "source_sha256": "0aecc8afb076adf025c36e89178827334320a0f6e55e7cf6f04370ca58da4e41",
+    "full": true,
+    "limit": null,
+    "start": 1,
+    "end": null,
+    "sizes": null,
+    "backends": [
+      "our-cadical",
+      "demaine-scip"
+    ],
+    "repeat": 3,
+    "timeout_seconds": 600.0,
+    "threads": 1,
+    "random_seed": 1,
+    "warmup": true
+  }
+}

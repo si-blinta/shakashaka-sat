@@ -15,38 +15,22 @@ from pathlib import Path
 
 CONFIGS = (
     "our-cadical",
-    "our-cpsat",
-    "our-scip",
-    "demaine-cadical",
-    "demaine-cpsat",
     "demaine-scip",
 )
 
 CONFIG_INFO = {
-    "our-cadical": ("ours-cnf", "cadical195"),
-    "our-cpsat": ("ours-cnf", "cp-sat"),
-    "our-scip": ("ours-cnf", "scip"),
-    "demaine-cadical": ("demaine-a-f", "cadical195"),
-    "demaine-scip": ("demaine-a-f", "scip"),
-    "demaine-cpsat": ("demaine-a-f", "cp-sat"),
+    "our-cadical": ("cnf", "cadical195"),
+    "demaine-scip": ("ip-a-f", "scip"),
 }
 
 LABELS = {
-    "our-cadical": "Ours / CaDiCaL 1.9.5",
-    "our-cpsat": "Ours / CP-SAT",
-    "our-scip": "Ours / SCIP",
-    "demaine-cadical": "Demaine A-F / CaDiCaL 1.9.5",
-    "demaine-scip": "Demaine A-F / SCIP",
-    "demaine-cpsat": "Demaine A-F / CP-SAT",
+    "our-cadical": "CNF model",
+    "demaine-scip": "IP model",
 }
 
 STYLES = {
-    "our-cadical": ("#0072B2", "-", "o", True),
-    "our-cpsat": ("#0072B2", "--", "s", True),
-    "our-scip": ("#0072B2", ":", "^", True),
-    "demaine-cadical": ("#D55E00", "-", "o", False),
-    "demaine-cpsat": ("#D55E00", "--", "s", False),
-    "demaine-scip": ("#D55E00", ":", "^", False),
+    "our-cadical": ("#0072B2", "-", "o"),
+    "demaine-scip": ("#D55E00", "--", "s"),
 }
 
 REQUIRED_COLUMNS = {
@@ -56,7 +40,7 @@ REQUIRED_COLUMNS = {
     "rows",
     "cols",
     "playable",
-    "formulation",
+    "model",
     "backend",
     "config",
     "vars",
@@ -82,26 +66,6 @@ STATUS_CLASSES = {
         "sat": {"SAT"},
         "unsat": {"UNSAT"},
         "timeout": {"TIMEOUT"},
-    },
-    "our-cpsat": {
-        "sat": {"OPTIMAL", "FEASIBLE"},
-        "unsat": {"INFEASIBLE"},
-        "timeout": {"UNKNOWN"},
-    },
-    "demaine-cadical": {
-        "sat": {"SAT"},
-        "unsat": {"UNSAT"},
-        "timeout": {"TIMEOUT"},
-    },
-    "demaine-cpsat": {
-        "sat": {"OPTIMAL", "FEASIBLE"},
-        "unsat": {"INFEASIBLE"},
-        "timeout": {"UNKNOWN"},
-    },
-    "our-scip": {
-        "sat": {"OPTIMAL"},
-        "unsat": {"INFEASIBLE"},
-        "timeout": {"TIMELIMIT"},
     },
     "demaine-scip": {
         "sat": {"OPTIMAL"},
@@ -243,10 +207,11 @@ def _load(path: Path) -> tuple[list[dict], dict]:
         raise FileNotFoundError(f"missing metadata file: {meta_path}")
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     expected_hash = meta.get("csv_sha256")
-    if expected_hash:
-        actual_hash = hashlib.sha256(path.read_bytes()).hexdigest()
-        if actual_hash.lower() != str(expected_hash).lower():
-            raise ValueError(f"CSV hash does not match metadata: {path}")
+    if not isinstance(expected_hash, str) or len(expected_hash) != 64:
+        raise ValueError(f"metadata has no valid CSV hash: {meta_path}")
+    actual_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual_hash.lower() != expected_hash.lower():
+        raise ValueError(f"CSV hash does not match metadata: {path}")
     return rows, meta
 
 
@@ -294,11 +259,11 @@ def _validate(
         config = row.get("config")
         if config not in configs:
             raise ValueError(f"unexpected configuration in CSV: {config}")
-        formulation, backend = CONFIG_INFO[config]
-        if row.get("formulation") != formulation or row.get("backend") != backend:
+        model, backend = CONFIG_INFO[config]
+        if row.get("model") != model or row.get("backend") != backend:
             raise ValueError(
                 f"{row.get('name', '?')}/{config}: expected "
-                f"formulation={formulation}, backend={backend}"
+                f"model={model}, backend={backend}"
             )
 
         family = row.get("family", "")
@@ -465,40 +430,6 @@ def _validate(
                 f"{instance_key}: index, dimensions, or playable count differ"
             )
 
-        structural = {row["config"]: row for row in group}
-        cnf_configs = present & {"our-cadical", "our-cpsat", "our-scip"}
-        if len(cnf_configs) >= 2:
-            counts = {
-                structural[config]["_structural_counts"]
-                for config in cnf_configs
-            }
-            if len(counts) != 1:
-                raise ValueError(f"{instance_key}: our CNF counts differ")
-        if {"demaine-scip", "demaine-cpsat"} <= present:
-            counts = {
-                structural[config]["_structural_counts"]
-                for config in ("demaine-scip", "demaine-cpsat")
-            }
-            if len(counts) != 1:
-                raise ValueError(f"{instance_key}: Demaine A-F counts differ")
-        if {
-            "demaine-cadical",
-            "demaine-scip",
-            "demaine-cpsat",
-        } <= present:
-            variable_counts = {
-                structural[config]["_structural_counts"][0]
-                for config in (
-                    "demaine-cadical",
-                    "demaine-scip",
-                    "demaine-cpsat",
-                )
-            }
-            if len(variable_counts) != 1:
-                raise ValueError(
-                    f"{instance_key}: Demaine A-F semantic variable counts differ"
-                )
-
     indices = sorted(index_by_name.values())
     if len(indices) != len(set(indices)):
         raise ValueError("two instances share the same instance_index")
@@ -560,7 +491,11 @@ def _summaries(
 
 def _write_summary(path: Path, summaries: list[dict]) -> None:
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=SUMMARY_HEADER)
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=SUMMARY_HEADER,
+            lineterminator="\n",
+        )
         writer.writeheader()
         for summary in summaries:
             writer.writerow({
@@ -572,58 +507,51 @@ def _write_summary(path: Path, summaries: list[dict]) -> None:
 def _plot_cactus(
     output: Path,
     by_config: dict[str, list[dict]],
-    *,
-    metric: str,
 ) -> None:
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(4.35, 3.55))
+    plt.rcParams.update({"font.family": "serif", "font.size": 8.5})
+    fig, ax = plt.subplots(figsize=(3.4, 2.6))
     for config in CONFIGS:
         rows = by_config.get(config)
         if not rows:
             continue
         values = sorted(
-            _float(row, metric) for row in rows if row["result"] != "TIMEOUT"
+            _float(row, "total_ms")
+            for row in rows
+            if row["result"] != "TIMEOUT"
         )
-        color, linestyle, marker, filled = STYLES[config]
-        marker_step = max(1, len(values) // 14)
-        marker_offset = 0
-        if config.startswith("demaine-"):
-            marker_offset = max(1, marker_step // 2)
+        color, linestyle, _ = STYLES[config]
         ax.plot(
             range(1, len(values) + 1),
             values,
             color=color,
             linestyle=linestyle,
             linewidth=1.75,
-            marker=marker,
-            markersize=3.8,
-            markerfacecolor=color if filled else "white",
-            markeredgecolor=color,
-            markeredgewidth=0.8,
-            markevery=(marker_offset, marker_step),
             label=LABELS[config],
         )
     ax.set_yscale("log")
-    ax.set_xlabel("instances solved")
-    ax.set_ylabel("total time (ms)" if metric == "total_ms" else "solving time (ms)")
-    ax.grid(True, which="major", alpha=0.26, linewidth=0.55)
-    ax.grid(True, which="minor", alpha=0.12, linewidth=0.35)
+    ax.set_xlabel("Solved instances")
+    ax.set_ylabel("Total runtime (ms)")
+    instance_count = max(len(rows) for rows in by_config.values())
+    ax.set_xlim(1, instance_count)
+    ax.set_xticks(range(500, instance_count, 500))
+    ax.grid(True, which="major", alpha=0.50, linewidth=0.55)
+    ax.grid(True, which="minor", alpha=0.20, linewidth=0.35)
     ax.legend(
         loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
+        bbox_to_anchor=(0.5, 1.01),
         ncol=2,
         frameon=False,
-        fontsize=6.9,
-        columnspacing=0.9,
-        handlelength=3.0,
-        handletextpad=0.55,
+        fontsize=8.0,
+        columnspacing=1.2,
+        handlelength=2.4,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.77))
-    fig.savefig(output, dpi=300, bbox_inches="tight")
+    fig.subplots_adjust(left=0.16, right=0.98, bottom=0.18, top=0.77)
+    fig.savefig(output, dpi=400, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -638,55 +566,75 @@ def _artificial_n(row: dict) -> int:
 def _plot_scaling(
     output: Path,
     by_config: dict[str, list[dict]],
-    *,
-    metric: str,
 ) -> None:
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(4.35, 3.55))
+    plt.rcParams.update({"font.family": "serif", "font.size": 8.5})
+    fig, ax = plt.subplots(figsize=(3.65, 2.7))
+    plotted_sizes = set()
     for config in CONFIGS:
         rows = by_config.get(config)
         if not rows:
             continue
-        points = sorted(
-            (_artificial_n(row), _float(row, metric))
+        total_points = sorted(
+            (_artificial_n(row), _float(row, "total_ms") / 1000.0)
             for row in rows
             if row["result"] != "TIMEOUT"
         )
-        color, linestyle, marker, filled = STYLES[config]
+        solve_points = sorted(
+            (_artificial_n(row), _float(row, "solve_ms") / 1000.0)
+            for row in rows
+            if row["result"] != "TIMEOUT"
+        )
+        plotted_sizes.update(point[0] for point in total_points)
+        color, _, marker = STYLES[config]
         ax.plot(
-            [point[0] for point in points],
-            [point[1] for point in points],
+            [point[0] for point in total_points],
+            [point[1] for point in total_points],
             color=color,
-            linestyle=linestyle,
+            linestyle="-",
             marker=marker,
-            markersize=4.2,
-            markerfacecolor=color if filled else "white",
+            markersize=5.4,
+            markerfacecolor=color,
             markeredgecolor=color,
-            markeredgewidth=0.85,
-            linewidth=1.75,
-            label=LABELS[config],
+            markeredgewidth=0.9,
+            linewidth=2.0,
+            label=f"{LABELS[config]} - total",
+        )
+        ax.plot(
+            [point[0] for point in solve_points],
+            [point[1] for point in solve_points],
+            color=color,
+            linestyle="--",
+            marker=marker,
+            markersize=5.4,
+            markerfacecolor="white",
+            markeredgecolor=color,
+            markeredgewidth=1.1,
+            linewidth=1.8,
+            label=f"{LABELS[config]} - solve only",
         )
     ax.set_yscale("log")
-    ax.set_xlabel(r"size parameter $n$")
-    ax.set_ylabel("total time (ms)" if metric == "total_ms" else "solving time (ms)")
-    ax.grid(True, which="major", alpha=0.26, linewidth=0.55)
-    ax.grid(True, which="minor", alpha=0.12, linewidth=0.35)
+    ax.set_xlabel(r"Parameter $n$")
+    ax.set_ylabel("Runtime (s)")
+    preferred_ticks = [5, 10, 20, 30, 40, 50]
+    ax.set_xticks([value for value in preferred_ticks if value in plotted_sizes])
+    ax.grid(True, which="major", alpha=0.35, linewidth=0.65)
+    ax.grid(True, which="minor", alpha=0.20, linewidth=0.45)
     ax.legend(
         loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
+        bbox_to_anchor=(0.5, 1.01),
         ncol=2,
         frameon=False,
-        fontsize=6.9,
-        columnspacing=0.9,
-        handlelength=3.0,
-        handletextpad=0.55,
+        fontsize=7.4,
+        columnspacing=1.0,
+        handlelength=2.3,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.77))
-    fig.savefig(output, dpi=300, bbox_inches="tight")
+    fig.tight_layout(rect=(0, 0, 1, 0.79))
+    fig.savefig(output, dpi=400, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -711,7 +659,6 @@ def main() -> int:
     parser.add_argument("--allow-timeouts", action="store_true")
     parser.add_argument("--summary-csv", required=True)
     parser.add_argument("--figure", required=True)
-    parser.add_argument("--metric", choices=("solve_ms", "total_ms"), default="total_ms")
     parser.add_argument("--plot", choices=("cactus", "scaling"), default="cactus")
     args = parser.parse_args()
 
@@ -730,9 +677,9 @@ def main() -> int:
     figure_path = Path(args.figure).resolve()
     _write_summary(summary_path, summaries)
     if args.plot == "cactus":
-        _plot_cactus(figure_path, by_config, metric=args.metric)
+        _plot_cactus(figure_path, by_config)
     else:
-        _plot_scaling(figure_path, by_config, metric=args.metric)
+        _plot_scaling(figure_path, by_config)
     _print_summary(summaries)
     print(f"validated {len(rows)} rows")
     print(f"summary -> {summary_path}")

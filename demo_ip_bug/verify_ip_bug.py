@@ -10,12 +10,18 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from geometry_check import check_solution
+from instances import load_instance
 from ip_solver import IPSolver
 from puzzle import Motif, ShakashakaPuzzle
-from puzzlink import decode_puzz_link
+from solver_backends import configure_scip
 
 
-HF1199_URL = "http://puzz.link/p?shakashaka/10/10/zs000ajaajaaj000azq"
+DATA_PATH = ROOT / "data" / "hf_instances.jsonl"
+DEFECTIVE_CORNER = (
+    (4, 4, Motif.TRI_UL),
+    (4, 5, Motif.WHITE),
+    (5, 4, Motif.WHITE),
+)
 
 
 def motif_at(
@@ -62,22 +68,30 @@ def corner_values(
     return d_lhs, rhs, f_lhs, rhs
 
 
-def solve_model(
+def build_model(
     puzzle: ShakashakaPuzzle,
     *,
     corrected: bool,
-) -> tuple[IPSolver, dict[tuple[int, int], Motif]]:
+) -> IPSolver:
     solver = IPSolver(puzzle, corrected=corrected)
-    if not solver.solve():
-        name = "A-F" if corrected else "A-E"
-        raise RuntimeError(f"{name} unexpectedly reported the instance infeasible")
-    return solver, solver.solution
+    solver.build()
+    configure_scip(solver.model, num_threads=1, random_seed=1)
+    return solver
+
+
+def force_defective_corner(solver: IPSolver) -> None:
+    for row, column, motif in DEFECTIVE_CORNER:
+        solver.model.addCons(solver.x[(row, column, int(motif))] == 1)
 
 
 def main() -> int:
-    puzzle = decode_puzz_link(HF1199_URL)
+    name, puzzle = load_instance(DATA_PATH, 1199)
 
-    published, invalid_solution = solve_model(puzzle, corrected=False)
+    published = build_model(puzzle, corrected=False)
+    force_defective_corner(published)
+    if published.solve() is not True or published.solution is None:
+        raise RuntimeError("A-E rejected the defective corner")
+    invalid_solution = published.solution
     violations = check_solution(puzzle, invalid_solution)
     if not violations:
         raise RuntimeError("A-E unexpectedly returned a valid solution")
@@ -104,7 +118,15 @@ def main() -> int:
     if f_lhs <= f_rhs:
         raise RuntimeError("family F does not reject the A-E witness")
 
-    corrected, valid_solution = solve_model(puzzle, corrected=True)
+    blocked = build_model(puzzle, corrected=True)
+    force_defective_corner(blocked)
+    if blocked.solve() is not False:
+        raise RuntimeError("family F did not reject the defective corner")
+
+    corrected = build_model(puzzle, corrected=True)
+    if corrected.solve() is not True or corrected.solution is None:
+        raise RuntimeError("A-F unexpectedly reported the instance infeasible")
+    valid_solution = corrected.solution
     corrected_violations = check_solution(puzzle, valid_solution)
     if corrected_violations:
         raise RuntimeError(
@@ -112,7 +134,7 @@ def main() -> int:
             + "; ".join(corrected_violations)
         )
 
-    print("Instance: hf_1199")
+    print(f"Instance: {name}")
     print(
         "A-E: feasible, but rejected by the geometric validator "
         f"({len(violations)} violation(s))"
