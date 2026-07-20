@@ -1,0 +1,20 @@
+c ============================================
+c UNSAT CORE ANALYSIS
+c ============================================
+c
+c The following clauses form an unsatisfiable core:
+c These rules together make the problem impossible to solve.
+c
+c --- Conflicting rules summary ---
+c Rule [1a]: 4 clause(s)
+c Rule [1c-uniqueness]: 2 clause(s)
+c Rule [5c]: 1 clause(s)
+c
+c --- Detailed conflicting clauses ---
+c Clause 2039 [5c]: -x(4,5,5) -x(5,5,5) -x(5,4,5) x(4,4,5) x(4,4,1)
+c Clause 451 [1c-uniqueness]: -x(4,4,5) -x(4,4,6)
+c Clause 441 [1c-uniqueness]: -x(4,4,1) -x(4,4,6)
+c Clause 3 [1a]: x(5,5,5)
+c Clause 2 [1a]: x(5,4,5)
+c Clause 1 [1a]: x(4,5,5)
+c Clause 0 [1a]: x(4,4,6)

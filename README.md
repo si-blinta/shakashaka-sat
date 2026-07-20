@@ -53,6 +53,35 @@ python -B analyze_results.py results/hf_results.csv --expected-instances 2897 --
 python -B analyze_results.py results/scaling_results.csv --expected-instances 8 --expected-repeat 3 --summary-csv reproduced/scaling_summary.csv --figure reproduced/scaling_artificial.png --plot scaling
 ```
 
+## ZKP block check
+
+The `zkp_check/` directory contains the tool used to cross-check the
+hand-made 2x2 tables of the card-based ZKP protocol for Shakashaka
+(Miyahara, Robert, Lafourcade and Kaneko, FUN 2026). Each of the
+6^4 = 1,296 possible 2x2 motif configurations is placed near the center of
+an otherwise unconstrained board and the SAT solver decides whether it
+extends to a valid solution:
+
+```text
+python -B zkp_check/test_all_cases.py 8 --quiet
+```
+
+This classifies 138 configurations as extensible and 1,158 as impossible
+(written to `results_sat.txt` and `results_unsat.txt`), in agreement with
+the enumeration of the FUN 2026 paper. The classification is deterministic
+and independent of the board size beyond small values.
+
+The same check is available interactively:
+
+```text
+python zkp_check/gui.py
+```
+
+Compose a 2x2 configuration and press SOLVE; on unsatisfiable
+configurations the tool writes the conflicting constraint instances,
+extracted from the unsatisfiable core, to `shakashaka_reason.log`, next to
+the DIMACS formula and a DRAT proof.
+
 ## Re-running the experiments
 
 The protocol uses one thread, seed 1, one warm-up, three repetitions, and a

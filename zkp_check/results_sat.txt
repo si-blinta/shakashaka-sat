@@ -1,0 +1,420 @@
+SATISFIABLE CASES
+Grid size: 8x8
+========================================
+
+[   k1,    k4]
+[   k2,    k3]
+
+[   k1,    k4]
+[   k2, white]
+
+[   k1,    k4]
+[white,    k3]
+
+[   k1,    k4]
+[white, white]
+
+[   k1, white]
+[   k2,    k3]
+
+[   k1, white]
+[   k2, white]
+
+[   k1, white]
+[white,    k3]
+
+[   k1, white]
+[white, white]
+
+[   k2,    k3]
+[   k1,    k4]
+
+[   k2,    k3]
+[   k4,    k1]
+
+[   k2,    k3]
+[   k4, white]
+
+[   k2,    k3]
+[   k4, black]
+
+[   k2,    k3]
+[white,    k1]
+
+[   k2,    k3]
+[white, white]
+
+[   k2,    k3]
+[white, black]
+
+[   k2,    k3]
+[black,    k1]
+
+[   k2,    k3]
+[black, white]
+
+[   k2,    k3]
+[black, black]
+
+[   k2, white]
+[   k4,    k2]
+
+[   k2, white]
+[white,    k2]
+
+[   k2, white]
+[black,    k2]
+
+[   k3,    k1]
+[   k1, white]
+
+[   k3,    k1]
+[   k4,    k2]
+
+[   k3,    k1]
+[white,    k2]
+
+[   k3,    k1]
+[black,    k2]
+
+[   k3,    k2]
+[   k1,    k4]
+
+[   k3,    k2]
+[   k4,    k1]
+
+[   k3,    k2]
+[   k4, white]
+
+[   k3,    k2]
+[   k4, black]
+
+[   k3,    k2]
+[white,    k1]
+
+[   k3,    k2]
+[white, white]
+
+[   k3,    k2]
+[white, black]
+
+[   k3,    k2]
+[black,    k1]
+
+[   k3,    k2]
+[black, white]
+
+[   k3,    k2]
+[black, black]
+
+[   k3, white]
+[   k1,    k4]
+
+[   k3, white]
+[   k4,    k1]
+
+[   k3, white]
+[   k4, white]
+
+[   k3, white]
+[   k4, black]
+
+[   k3, white]
+[white,    k1]
+
+[   k3, white]
+[white, black]
+
+[   k3, white]
+[black,    k1]
+
+[   k3, white]
+[black, white]
+
+[   k3, white]
+[black, black]
+
+[   k3, black]
+[   k1,    k4]
+
+[   k3, black]
+[   k4,    k1]
+
+[   k3, black]
+[   k4, white]
+
+[   k3, black]
+[   k4, black]
+
+[   k3, black]
+[white,    k1]
+
+[   k3, black]
+[white, white]
+
+[   k3, black]
+[white, black]
+
+[   k3, black]
+[black,    k1]
+
+[   k3, black]
+[black, white]
+
+[   k3, black]
+[black, black]
+
+[   k4,    k1]
+[   k3,    k2]
+
+[   k4,    k2]
+[   k3,    k1]
+
+[   k4,    k2]
+[   k3, white]
+
+[   k4,    k2]
+[   k3, black]
+
+[   k4,    k2]
+[white,    k4]
+
+[   k4, white]
+[   k3,    k1]
+
+[   k4, white]
+[   k3, white]
+
+[   k4, white]
+[   k3, black]
+
+[   k4, white]
+[white,    k4]
+
+[   k4, black]
+[   k3,    k1]
+
+[   k4, black]
+[   k3, white]
+
+[   k4, black]
+[   k3, black]
+
+[   k4, black]
+[white,    k4]
+
+[white,    k1]
+[   k1, white]
+
+[white,    k1]
+[   k4,    k2]
+
+[white,    k1]
+[white,    k2]
+
+[white,    k1]
+[black,    k2]
+
+[white,    k2]
+[   k1,    k4]
+
+[white,    k2]
+[   k4,    k1]
+
+[white,    k2]
+[   k4, white]
+
+[white,    k2]
+[   k4, black]
+
+[white,    k2]
+[white,    k1]
+
+[white,    k2]
+[white, black]
+
+[white,    k2]
+[black,    k1]
+
+[white,    k2]
+[black, white]
+
+[white,    k2]
+[black, black]
+
+[white,    k3]
+[   k3,    k1]
+
+[white,    k3]
+[   k3, white]
+
+[white,    k3]
+[   k3, black]
+
+[white,    k4]
+[   k2,    k3]
+
+[white,    k4]
+[   k2, white]
+
+[white,    k4]
+[white,    k3]
+
+[white,    k4]
+[white, white]
+
+[white, white]
+[   k1,    k4]
+
+[white, white]
+[   k2,    k3]
+
+[white, white]
+[   k2, white]
+
+[white, white]
+[   k4,    k1]
+
+[white, white]
+[   k4, black]
+
+[white, white]
+[white,    k3]
+
+[white, white]
+[white, white]
+
+[white, white]
+[black,    k1]
+
+[white, white]
+[black, black]
+
+[white, black]
+[   k1,    k4]
+
+[white, black]
+[   k4,    k1]
+
+[white, black]
+[   k4, white]
+
+[white, black]
+[   k4, black]
+
+[white, black]
+[white,    k1]
+
+[white, black]
+[white, black]
+
+[white, black]
+[black,    k1]
+
+[white, black]
+[black, white]
+
+[white, black]
+[black, black]
+
+[black,    k1]
+[   k1, white]
+
+[black,    k1]
+[   k4,    k2]
+
+[black,    k1]
+[white,    k2]
+
+[black,    k1]
+[black,    k2]
+
+[black,    k2]
+[   k1,    k4]
+
+[black,    k2]
+[   k4,    k1]
+
+[black,    k2]
+[   k4, white]
+
+[black,    k2]
+[   k4, black]
+
+[black,    k2]
+[white,    k1]
+
+[black,    k2]
+[white, white]
+
+[black,    k2]
+[white, black]
+
+[black,    k2]
+[black,    k1]
+
+[black,    k2]
+[black, white]
+
+[black,    k2]
+[black, black]
+
+[black, white]
+[   k1,    k4]
+
+[black, white]
+[   k4,    k1]
+
+[black, white]
+[   k4, white]
+
+[black, white]
+[   k4, black]
+
+[black, white]
+[white,    k1]
+
+[black, white]
+[white, black]
+
+[black, white]
+[black,    k1]
+
+[black, white]
+[black, white]
+
+[black, white]
+[black, black]
+
+[black, black]
+[   k1,    k4]
+
+[black, black]
+[   k4,    k1]
+
+[black, black]
+[   k4, white]
+
+[black, black]
+[   k4, black]
+
+[black, black]
+[white,    k1]
+
+[black, black]
+[white, white]
+
+[black, black]
+[white, black]
+
+[black, black]
+[black,    k1]
+
+[black, black]
+[black, white]
+
+[black, black]
+[black, black]
+
+========================================
+TOTAL SAT: 138
